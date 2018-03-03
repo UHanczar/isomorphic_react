@@ -17,7 +17,7 @@ export default {
     new webpack.NamedModulesPlugin(),
     new webpack.DefinePlugin({
       'process.env': {
-        NODE_ENV: 'development',
+        NODE_ENV: JSON.stringify('development'),
         WEBPACK: true
       }
     })
@@ -26,12 +26,21 @@ export default {
     extensions: ['.js', '.json', '.jsx']
   },
   module: {
-    rules: [{
-      test: /\.jsx?/,
-      use: {
-        loader: 'babel-loader'
+    rules: [
+      {
+        test: /\.jsx?/,
+        use: {
+          loader: 'babel-loader'
+        },
+        include: path.resolve(__dirname, 'src')
       },
-      include: path.resolve(__dirname, 'src')
-    }]
+      {
+        test: /\.css/,
+        loader: [
+          'style-loader',
+          'css-loader'
+        ]
+      }
+    ]
   }
 };
