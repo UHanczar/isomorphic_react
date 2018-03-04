@@ -9,13 +9,13 @@ const QuestionsList = ({ questions }) => (
       questions && questions.length ? (
         <div>
           {questions.map(question => (
-            <QuestionListItem key ={ question.question_id } { ...question } />
+            <QuestionListItem key={question.question_id} {...question} />
           ))}
         </div>) : <div>Loading questions...</div>
       }
   </div>
 );
 
-const mapStateToProps = ({ questions }) => ({ questions }); 
+const mapStateToProps = ({ questions }) => ({ questions });
 
 export default connect(mapStateToProps)(QuestionsList);

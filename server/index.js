@@ -2,15 +2,24 @@ import express from 'express';
 import yields from 'express-yields';
 import fs from 'fs-extra';
 import webpack from 'webpack';
+import path from 'path';
 import { argv } from 'optimist';
 import { get } from 'request-promise';
 import { delay } from 'redux-saga';
+import { renderToString } from 'react-dom/server';
+import { Provider } from 'react-redux';
+import React from 'react';
+import { ConnectedRouter } from 'react-router-redux';
+import createHistory from 'history/createMemoryHistory';
 
 import { questions, question } from '../data/api-real-url';
+import getStore from '../src/getStore';
+import App from '../src/App';
 
 const PORT = process.env.PORT || 3000;
 const app = express();
 const useLiveData = argv.useLiveData === 'true';
+const useServerRender = argv.useServerRender === 'true';
 
 function* getQuestions() {
   let data;
@@ -35,7 +44,6 @@ function* getQuestion(id) {
     const requiredQuestion = questionsArray.items.find(_question => _question.question_id.toString() === id);
     requiredQuestion.body = `Mock question body: ${id}`;
     data = { items: [requiredQuestion] };
-    console.log('DATA', data);
   }
 
   return data;
@@ -67,10 +75,46 @@ if (process.env.NODE_ENV === 'development') {
   }));
 
   app.use(require('webpack-hot-middleware')(compiler));
+} else {
+  app.use(express.static(path.resolve(__dirname, '../dist')));
 }
 
-app.get(['/'], function* (req, res) {
-  const index = yield fs.readFile('./public/index.html', 'utf-8');
+app.get(['/', '/question/:id'], function* (req, res) {
+  let index = yield fs.readFile('./public/index.html', 'utf-8');
+
+  const initialState = {
+    questions: []
+  };
+
+  const history = createHistory({
+    initialEntries: [req.path]
+  });
+  
+  if (req.params.id) {
+    const questionId = req.params.id;
+    const responce = yield getQuestion(questionId);
+    const questionDetails = responce.items[0];
+    initialState.questions = [{ ...questionDetails, questionId }];
+  } else {
+    const fetchedQuestions = yield getQuestions();
+    initialState.questions = fetchedQuestions.items;
+  }
+  
+  const store = getStore(history, initialState);
+
+  if (useServerRender) {
+    const appRendered = renderToString(
+      <Provider store={store}>
+        <ConnectedRouter history={history}>
+          <App />
+        </ConnectedRouter>
+      </Provider>
+    );
+
+    index = index.replace('<%= preloadApplication %>', appRendered);
+  } else {
+    index = index.replace('<%= preloadApplication %>', 'Pleace, wait while we load the application.');
+  }
 
   res.send(index);
 });
