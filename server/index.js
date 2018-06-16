@@ -89,7 +89,7 @@ app.get(['/', '/question/:id'], function* (req, res) {
   const history = createHistory({
     initialEntries: [req.path]
   });
-  
+
   if (req.params.id) {
     const questionId = req.params.id;
     const responce = yield getQuestion(questionId);
@@ -99,7 +99,7 @@ app.get(['/', '/question/:id'], function* (req, res) {
     const fetchedQuestions = yield getQuestions();
     initialState.questions = fetchedQuestions.items;
   }
-  
+
   const store = getStore(history, initialState);
 
   if (useServerRender) {
